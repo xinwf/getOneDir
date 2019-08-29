@@ -13,23 +13,19 @@ def getDirAndFileList(url):
     try:
         html = urllib2.urlopen(req, timeout=120).read()
         doc  = lxml.html.fromstring(html)
-        if len(doc.xpath('//div[@class="signup-prompt-bg rounded-1"]')):
+        # this means : gitee.com/user/project, gitee.com/user/project/tree/branch
+        if len(url.split("//")[1].split('/')) == 3 or (len(url.split("//")[1].split('/')) == 5 and url.split("//")[1].split('/')[-2]=="tree" ):
             # print("homepage")
             homepage = True
         else:
             # print("Not homepage")
             homepage = False
-        itemList = doc.xpath('//div[@class="file-wrap"]/table/tbody/tr[@class="js-navigation-item"] | \
-            //include-fragment[@class="file-wrap"]/table/tbody/tr[@class="js-navigation-item"]')
+        itemList = doc.xpath('//div[@id="tree-slider"]/div[@data-type]')
         for row in itemList:
-            if 'directory' in row.xpath('td[@class="icon"]/svg/@class')[0]:
-                if 'This path' in row.xpath('td[@class="content"]/span/a/@title')[0]:
-                    dirList.append( row.xpath('td[@class="content"]/span/a/span/text()')[0] +
-                        row.xpath('td[@class="content"]/span/a/text()')[0] )
-                else:
-                    dirList.append(row.xpath('td[@class="content"]/span/a/@title')[0])
-            else:
-                fileList.append(row.xpath('td[@class="content"]/span/a/@title')[0])
+            if 'folder' == row.xpath('div/@data-type')[0]:
+                dirList.append( row.xpath('div/a/@title')[0])
+            elif 'file' == row.xpath('div/@data-type')[0]:
+                fileList.append(row.xpath('div/a/@title')[0])
         if len(fileList) == 0:
             # print("Please make sure that this link doesn't contain files: %s " % url)
             no_file_link_list.append(url)
@@ -44,9 +40,8 @@ def downloadFile(dirPath, fileList, url):
     origin_work_dir = os.getcwd()
     # print("origin_work_dir: %s" % origin_work_dir)
     os.chdir(dirPath)
-    prefix = 'https://raw.githubusercontent.com'
     for fileName in fileList:
-        downloadUrl = prefix + url.split('//')[1].replace('tree/', '').replace('github.com','')+'/'+fileName
+        downloadUrl = url.replace('tree','raw')+'/'+fileName
         print("Downlading %s" % dirPath+'/'+fileName)
         commands.getstatusoutput('wget %s' % downloadUrl)
     os.chdir(origin_work_dir)
@@ -64,6 +59,8 @@ def recursive(curDir, url):
     urlSubDirList = subDirList
     branch = 'master'
     urlSplitList = url.split("//")[1].split('/')
+    if len(urlSplitList) > 3 and urlSplitList[urlSplitList.index('tree')+1] != 'master':
+        branch = urlSplitList[urlSplitList.index('tree')+1]
     if len(fileList) != 0:
         downloadFile(curDir, fileList, url)
     if homepage:
