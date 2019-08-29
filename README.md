@@ -1,4 +1,4 @@
 # getOneDir
-get one directory and files you need from any url of a github repository. <br>
+get one directory and files you need from any url of a `github`, `gitee` repository. <br>
 usage:<br>
-&emsp;&emsp;./getOneDir.py url1 url2 url3 ...
+&emsp;&emsp;./getOneDir.py [--path=/save_dir] url1 url2 url3 ...
